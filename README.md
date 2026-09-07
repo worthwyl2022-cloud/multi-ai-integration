@@ -1,1 +1,43 @@
-# Multi-AI Integration Platform\n\nA unified platform for integrating Claude, Perplexity, and GitHub Copilot capabilities into your workflows.\n\n## Features\n\n✅ **Claude Integration** - Access Anthropic's Claude models for reasoning and code generation\n✅ **Perplexity Integration** - Real-time web search and information synthesis  \n✅ **GitHub Copilot** - GitHub's AI-powered code completion\n✅ **Smart Router** - Automatically route tasks to the best-suited AI\n✅ **Unified API** - Single interface for all AI services\n✅ **GitHub Actions Workflows** - Automate AI tasks in your repositories\n\n## Quick Start\n\n### 1. Clone & Install\n\n```bash\ngit clone https://github.com/worthwyl2022-cloud/multi-ai-integration.git\ncd multi-ai-integration\nnpm ci\n```\n\n### 2. Configure API Keys\n\n```bash\ncp .env.example .env\n```\n\nEdit `.env` with your API keys:\n\n```env\nCLAUDE_API_KEY=sk-ant-...\nPERPLEXITY_API_KEY=pplx-...\nGITHUB_TOKEN=ghp_...\n```\n\n### 3. Run the Server\n\n```bash\nnpm start\n```\n\nServer runs on `http://localhost:3000`\n\n## Usage\n\n### Direct Claude\n\n```bash\ncurl -X POST http://localhost:3000/api/claude \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"prompt\": \"Explain quantum computing\"}'\n```\n\n### Direct Perplexity\n\n```bash\ncurl -X POST http://localhost:3000/api/perplexity \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\": \"Latest AI breakthroughs 2024\"}'\n```\n\n### Smart Router (Auto-Select Best AI)\n\n```bash\ncurl -X POST http://localhost:3000/api/route \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"task_type\": \"research\",\n    \"prompt\": \"Find recent developments in quantum computing\"\n  }'\n```\n\n## API Endpoints\n\n### POST /api/claude\nCall Claude directly for reasoning, code generation, analysis\n\n### POST /api/perplexity\nCall Perplexity for real-time web search and current information\n\n### POST /api/route\nSmart routing - automatically selects best AI based on task type\n\n## Environment Setup\n\n### Get API Keys\n\n**Claude:** https://console.anthropic.com\n**Perplexity:** https://www.perplexity.ai/api\n**GitHub:** https://github.com/settings/tokens\n\n## License\n\nMIT\n 
+# Multi-AI Proposal Gateway
+
+A small, deployable gateway for Claude and Perplexity proposals. **Providers generate proposals; they do not acquire Cranium authority.** Any durable memory, canon update, permission change, or external action must pass through the canonical Cranium kernel and its governed commit boundary.
+
+## Routes
+
+| Route | Purpose |
+|---|---|
+| `GET /healthz` | Liveness check |
+| `GET /readyz` | Provider configuration and authority-boundary status |
+| `POST /api/claude` | Claude proposal generation |
+| `POST /api/claude/code-review` | Advisory Claude code review |
+| `POST /api/perplexity` | Perplexity research/search proposal |
+| `POST /api/route` | Task-type routing to a provider |
+
+Responses include `proposal_only: true` and `authority_status: "UNCOMMITTED"`. This is deliberate: semantic output is not authority.
+
+## Run locally
+
+```bash
+cp .env.example .env
+npm ci
+npm test
+npm start
+```
+
+Required environment variables are provider-specific:
+
+```env
+ANTHROPIC_API_KEY=...
+PERPLEXITY_API_KEY=...
+PORT=3000
+```
+
+The gateway starts without provider credentials so health and deployment probes remain available; provider requests return a clear `503` until configured. Never commit credentials.
+
+## Architecture boundary
+
+This repository is an adapter/proposal plane. It does not implement a second authority engine, canon lane, receipt issuer, or state reducer. The canonical authority path is the `cranium-kernel` repository. See its [governance boundary](https://github.com/worthwyl2022-cloud/cranium-kernel/blob/main/GOVERNANCE_BOUNDARY.md).
+
+## Evidence boundary
+
+Green tests prove routing and input behavior only. They do not prove provider correctness, factuality, security certification, production availability, or Cranium authority. Provider responses must be independently evaluated and evidence-bound before any governed commit.

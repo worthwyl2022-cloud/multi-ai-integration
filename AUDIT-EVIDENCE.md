@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Repository: `worthwyl2022-cloud/multi-ai-integration`
+- Repository: `worthwyl2022-cloud/cranium-provider-integrations`
 - Default working branch observed: `main`
 - Commit count at inventory: `21`
 - Files at inventory: `19`

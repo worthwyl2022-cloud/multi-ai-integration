@@ -5,26 +5,9 @@
   "private": true,
   "type": "module",
   "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "test": "node --test test/router.test.js",
-    "audit": "npm audit --audit-level=moderate"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.24.0",
-    "dotenv": "^16.4.0",
-    "express": "^5.2.1"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "keywords": [
-    "ai",
-    "claude",
-    "perplexity",
-    "proposal-gateway",
-    "governance"
-  ],
+  "scripts": {"start":"node src/index.js","dev":"node --watch src/index.js","test":"node --test","audit":"npm audit --audit-level=high"},
+  "dependencies": {"@anthropic-ai/sdk":"^0.24.0","axios":"^1.7.0","dotenv":"^16.4.0","express":"^5.2.1"},
+  "engines": {"node":">=24.0.0","npm":">=10.0.0"},
+  "keywords": ["ai","claude","perplexity","proposal-gateway","governance"],
   "license": "MIT"
 }

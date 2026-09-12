@@ -1,43 +1,34 @@
-# Multi-AI Proposal Gateway
+# Multi-AI Integration
 
-A small, deployable gateway for Claude and Perplexity proposals. **Providers generate proposals; they do not acquire Cranium authority.** Any durable memory, canon update, permission change, or external action must pass through the canonical Cranium kernel and its governed commit boundary.
+Multi-AI Integration is an executable gateway for Claude and Perplexity provider workflows. It exposes a single routing endpoint while preserving direct provider endpoints, validates required credentials, and returns provider metadata and usage information.
 
-## Routes
+## Implemented surface
 
-| Route | Purpose |
-|---|---|
-| `GET /healthz` | Liveness check |
-| `GET /readyz` | Provider configuration and authority-boundary status |
-| `POST /api/claude` | Claude proposal generation |
-| `POST /api/claude/code-review` | Advisory Claude code review |
-| `POST /api/perplexity` | Perplexity research/search proposal |
-| `POST /api/route` | Task-type routing to a provider |
+The server is implemented in `src/index.js`. Claude requests use the Anthropic SDK. Perplexity requests use the provider chat-completions endpoint. Routing selects a provider based on task type or an explicit preference. The server does not fabricate provider responses: requests fail when the required credential is absent or when the upstream provider rejects the request.
 
-Responses include `proposal_only: true` and `authority_status: "UNCOMMITTED"`. This is deliberate: semantic output is not authority.
+The repository does not contain a private GitHub Copilot backend. GitHub-hosted model access must be added through an explicitly configured provider adapter rather than being represented as an already-connected Copilot service.
 
 ## Run locally
 
 ```bash
-cp .env.example .env
 npm ci
 npm test
+npm audit --audit-level=high
 npm start
 ```
 
-Required environment variables are provider-specific:
+Configure credentials through environment variables:
 
-```env
-ANTHROPIC_API_KEY=...
-PERPLEXITY_API_KEY=...
-PORT=3000
+```bash
+export ANTHROPIC_API_KEY=...
+export PERPLEXITY_API_KEY=...
+export PORT=3000
 ```
 
-The gateway starts without provider credentials so health and deployment probes remain available; provider requests return a clear `503` until configured. Never commit credentials.
+## Endpoints
 
-## Architecture boundary
+`GET /health` returns the configured provider surface. `POST /api/claude` accepts `{ "prompt": "..." }`. `POST /api/perplexity` accepts `{ "query": "..." }`. `POST /api/route` accepts `{ "task_type": "research", "prompt": "..." }` and chooses the configured provider. Research and news helpers are available at `/api/perplexity/research` and `/api/perplexity/news`.
 
-This repository is an adapter/proposal plane. It does not implement a second authority engine, canon lane, receipt issuer, or state reducer. The canonical authority path is the `cranium-kernel` repository. See its [governance boundary](https://github.com/worthwyl2022-cloud/cranium-kernel/blob/main/GOVERNANCE_BOUNDARY.md).
+## Security boundary
 
-## Evidence boundary
-
-Green tests prove routing and input behavior only. They do not prove provider correctness, factuality, security certification, production availability, or Cranium authority. Provider responses must be independently evaluated and evidence-bound before any governed commit.
+Never commit API keys. The gateway is an integration service, not an authority engine, and it does not make governance decisions on behalf of the Cranium kernel.

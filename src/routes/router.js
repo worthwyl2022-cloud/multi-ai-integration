@@ -1,1 +1,36 @@
-import express from 'express';\nimport { askClaude } from '../clients/claude.js';\nimport { askPerplexity } from '../clients/perplexity.js';\n\nconst router = express.Router();\n\nfunction selectAI(taskType, prefer) {\n  if (prefer && (prefer === 'claude' || prefer === 'perplexity')) {\n    return { selected: prefer, reason: `User preference: ${prefer}` };\n  }\n\n  const routing = {\n    'reasoning': { ai: 'claude', reason: 'Claude excels at complex reasoning tasks' },\n    'research': { ai: 'perplexity', reason: 'Perplexity provides real-time web search' },\n    'code': { ai: 'claude', reason: 'Claude is specialized for code generation' },\n    'creative': { ai: 'claude', reason: 'Claude has strong creative writing capabilities' },\n    'analysis': { ai: 'claude', reason: 'Claude provides detailed analytical insights' },\n    'search': { ai: 'perplexity', reason: 'Perplexity excels at web search and factual queries' },\n    'news': { ai: 'perplexity', reason: 'Perplexity provides current information' },\n    'default': { ai: 'claude', reason: 'Default: Claude for general tasks' }\n  };\n\n  const route = routing[taskType?.toLowerCase()] || routing['default'];\n  return { selected: route.ai, reason: route.reason };\n}\n\nrouter.post('/', async (req, res) => {\n  const { task_type, prompt, prefer, max_tokens, temperature } = req.body;\n\n  if (!prompt) {\n    return res.status(400).json({ error: 'prompt is required' });\n  }\n\n  const routing = selectAI(task_type, prefer);\n  let result;\n\n  if (routing.selected === 'claude') {\n    result = await askClaude(prompt, { max_tokens, temperature });\n  } else if (routing.selected === 'perplexity') {\n    result = await askPerplexity(prompt, { max_tokens, temperature });\n  }\n\n  res.json({\n    selected_ai: routing.selected,\n    reasoning: routing.reason,\n    task_type: task_type || 'general',\n    ...result\n  });\n});\n\nexport default router;\n 
+import express from 'express';
+import { askClaude } from '../clients/claude.js';
+import { askPerplexity } from '../clients/perplexity.js';
+
+const router = express.Router();
+
+function selectAI(taskType, prefer) {
+  if (prefer === 'claude' || prefer === 'perplexity') {
+    return { selected: prefer, reason: `User preference: ${prefer}` };
+  }
+  const routing = {
+    reasoning: { selected: 'claude', reason: 'Claude is selected for reasoning.' },
+    code: { selected: 'claude', reason: 'Claude is selected for code tasks.' },
+    creative: { selected: 'claude', reason: 'Claude is selected for creative tasks.' },
+    research: { selected: 'perplexity', reason: 'Perplexity is selected for current research.' },
+    search: { selected: 'perplexity', reason: 'Perplexity is selected for web search.' },
+    news: { selected: 'perplexity', reason: 'Perplexity is selected for current news.' }
+  };
+  return routing[String(taskType || '').toLowerCase()] || { selected: 'claude', reason: 'Claude is the general-purpose default.' };
+}
+
+router.post('/', async (req, res, next) => {
+  try {
+    const { task_type: taskType, prompt, prefer, max_tokens: maxTokens, temperature } = req.body;
+    if (typeof prompt !== 'string' || !prompt.trim()) return res.status(400).json({ error: 'prompt is required' });
+    const routing = selectAI(taskType, prefer);
+    const result = routing.selected === 'claude'
+      ? await askClaude(prompt, { max_tokens: maxTokens, temperature })
+      : await askPerplexity(prompt, { max_tokens: maxTokens, temperature });
+    res.json({ selected_ai: routing.selected, reasoning: routing.reason, task_type: taskType || 'general', ...result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default router;

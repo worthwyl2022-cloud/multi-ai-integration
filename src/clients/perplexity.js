@@ -1,45 +1,31 @@
-const DEFAULT_MODEL = process.env.PERPLEXITY_MODEL ?? 'sonar-pro';
-const API_URL = 'https://api.perplexity.ai/chat/completions';
+import axios from 'axios';
 
-export async function askPerplexity(prompt, options = {}) {
-  if (typeof prompt !== 'string' || prompt.trim().length === 0) {
-    throw Object.assign(new Error('prompt must be a non-empty string'), { statusCode: 400 });
-  }
-  if (prompt.length > 32_000) {
-    throw Object.assign(new Error('prompt exceeds 32000 characters'), { statusCode: 413 });
-  }
+const endpoint = process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai/chat/completions';
+
+export async function askPerplexity(query, options = {}) {
   if (!process.env.PERPLEXITY_API_KEY) {
-    throw Object.assign(new Error('Perplexity credentials are not configured'), { statusCode: 503 });
+    throw new Error('PERPLEXITY_API_KEY is required for Perplexity requests');
   }
-
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    signal: AbortSignal.timeout(30_000),
+  const response = await axios.post(endpoint, {
+    model: options.model || process.env.PERPLEXITY_MODEL || 'sonar',
+    messages: [{ role: 'user', content: query }],
+    max_tokens: options.max_tokens || 1024,
+    temperature: options.temperature
+  }, {
     headers: {
       Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      model: options.model ?? DEFAULT_MODEL,
-      max_tokens: Math.min(Math.max(Number(options.max_tokens) || 1024, 1), 8192),
-      temperature: options.temperature == null ? undefined : Math.min(Math.max(Number(options.temperature), 0), 1),
-      messages: [{ role: 'user', content: prompt.trim() }],
-    }),
+    timeout: 30_000
   });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw Object.assign(new Error(payload.error?.message ?? `Perplexity request failed (${response.status})`), {
-      statusCode: response.status >= 500 ? 502 : 400,
-    });
-  }
-
   return {
-    model: payload.model,
-    text: payload.choices?.[0]?.message?.content ?? '',
-    citations: payload.citations ?? [],
-    usage: payload.usage,
-    proposal_only: true,
-    authority_status: 'UNCOMMITTED',
+    provider: 'perplexity',
+    model: response.data.model,
+    content: response.data.choices?.[0]?.message?.content || '',
+    citations: response.data.citations || [],
+    usage: response.data.usage
   };
 }
+
+export const researchTopic = (topic) => askPerplexity(`Research this topic with current sources: ${topic}`);
+export const findLatestNews = (topic) => askPerplexity(`Find the latest reliable news about: ${topic}`);
